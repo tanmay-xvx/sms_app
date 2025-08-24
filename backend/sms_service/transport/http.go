@@ -52,18 +52,9 @@ func (h *HTTPHandler) HealthCheck(c *gin.Context) {
 }
 
 // CORSMiddleware handles CORS for the SMS service
+// Note: CORS is now handled centrally in main.go
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "*")
-		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization")
-		c.Header("Access-Control-Allow-Credentials", "true")
-
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(http.StatusNoContent)
-			return
-		}
-
 		c.Next()
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -44,7 +45,12 @@ func main() {
 
 	// CORS configuration
 	config := cors.DefaultConfig()
-	corsOrigins := []string{os.Getenv("CORS_ORIGIN"), "http://localhost:3000"}
+	corsOrigins := []string{"http://localhost:3000"}
+	
+	// Add CORS_ORIGIN if set
+	if corsOrigin := os.Getenv("CORS_ORIGIN"); corsOrigin != "" {
+		corsOrigins = append(corsOrigins, corsOrigin)
+	}
 	
 	// Allow additional origins in production
 	if os.Getenv("ENVIRONMENT") == "production" {
@@ -54,10 +60,28 @@ func main() {
 		}
 	}
 	
-	config.AllowOrigins = corsOrigins
+	// Remove duplicates and empty strings
+	uniqueOrigins := make([]string, 0)
+	seen := make(map[string]bool)
+	for _, origin := range corsOrigins {
+		if origin != "" && !seen[origin] {
+			uniqueOrigins = append(uniqueOrigins, origin)
+			seen[origin] = true
+		}
+	}
+	
+	config.AllowOrigins = uniqueOrigins
 	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
 	config.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
+	config.AllowCredentials = true
+	config.MaxAge = 12 * time.Hour
+	
+	// Apply CORS middleware
 	r.Use(cors.New(config))
+	
+	// Log CORS configuration for debugging
+	log.Printf("CORS configured with origins: %v", uniqueOrigins)
+	log.Printf("Environment: %s", os.Getenv("ENVIRONMENT"))
 
 	// Initialize MongoDB repository
 	mongoURI := os.Getenv("MONGODB_URI")
