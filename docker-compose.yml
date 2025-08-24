@@ -1,0 +1,107 @@
+version: '3.8'
+
+services:
+  # MongoDB - Exposed for external access (Render)
+  mongodb:
+    image: mongo:7.0
+    container_name: sms-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: sms_app
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - sms-network
+    command: mongod --bind_ip_all --port 27017
+
+  # Redis (optional, for future use)
+  redis:
+    image: redis:7-alpine
+    container_name: sms-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - sms-network
+
+  # Backend Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sms-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - ENVIRONMENT=development
+      - GIN_MODE=debug
+      - PORT=8080
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/sms_app?authSource=admin
+      - CORS_ORIGIN=http://localhost:3000
+      - AI_SERVICE_URL=http://ai-service:8000
+    depends_on:
+      - mongodb
+    networks:
+      - sms-network
+    volumes:
+      - ./backend:/app
+      - /app/vendor
+
+  # AI Service
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: sms-ai-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - PORT=8000
+      - HOST=0.0.0.0
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:8080
+    networks:
+      - sms-network
+    volumes:
+      - ./ai-service:/app
+
+  # Frontend Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sms-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+      - NEXT_PUBLIC_AI_SERVICE_URL=http://localhost:8000
+    depends_on:
+      - backend
+      - ai-service
+    networks:
+      - sms-network
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+networks:
+  sms-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local 

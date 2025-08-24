@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: sms-backend
+    env: go
+    plan: free
+    buildCommand: go build -o bin/server main.go
+    startCommand: ./bin/server
+    envVars:
+      - key: GIN_MODE
+        value: release
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        value: https://your-frontend-domain.vercel.app
+      - key: AI_SERVICE_URL
+        value: https://your-ai-service.onrender.com

@@ -1,0 +1,354 @@
+basePath: /api
+definitions:
+  common.AppError:
+    properties:
+      code:
+        type: integer
+      details:
+        type: string
+      message:
+        type: string
+    type: object
+  models.Callback:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      message:
+        type: string
+      phone_number:
+        type: string
+      priority:
+        type: string
+      requested_at:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.CallbackRequest:
+    properties:
+      message:
+        example: Please call me back
+        type: string
+      phone_number:
+        example: "+1234567890"
+        type: string
+      priority:
+        example: high
+        type: string
+    required:
+    - phone_number
+    type: object
+  models.CallbackResponse:
+    properties:
+      message:
+        type: string
+      request_id:
+        type: string
+      status:
+        type: string
+      success:
+        type: boolean
+      timestamp:
+        type: string
+    type: object
+  models.OTPRequest:
+    description: Request structure for sending OTP
+    properties:
+      phone_number:
+        description: '@Description Phone number in international format (e.g., +1234567890)'
+        example: "+1234567890"
+        type: string
+    required:
+    - phone_number
+    type: object
+  models.OTPResponse:
+    properties:
+      expires_at:
+        type: string
+      message:
+        type: string
+      otp:
+        type: string
+      success:
+        type: boolean
+    type: object
+  models.OTPStatus:
+    properties:
+      attempts:
+        type: integer
+      expires_at:
+        type: string
+      has_active_otp:
+        type: boolean
+      phone_number:
+        type: string
+    type: object
+  models.SMSRequest:
+    description: Request structure for sending SMS
+    properties:
+      message:
+        description: '@Description SMS message content (1-160 characters)'
+        example: Hello World
+        type: string
+      phone_number:
+        description: '@Description Phone number in international format (e.g., +1234567890)'
+        example: "+1234567890"
+        type: string
+    required:
+    - message
+    - phone_number
+    type: object
+  models.SMSResponse:
+    properties:
+      id:
+        type: string
+      message:
+        type: string
+      success:
+        type: boolean
+      timestamp:
+        type: string
+    type: object
+  models.VerifyOTPRequest:
+    description: Request structure for verifying OTP
+    properties:
+      otp:
+        description: '@Description 6-digit OTP code'
+        example: "123456"
+        type: string
+      phone_number:
+        description: '@Description Phone number in international format (e.g., +1234567890)'
+        example: "+1234567890"
+        type: string
+    required:
+    - otp
+    - phone_number
+    type: object
+  models.VerifyOTPResponse:
+    properties:
+      message:
+        type: string
+      success:
+        type: boolean
+      valid:
+        type: boolean
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@smsapp.com
+    name: API Support
+  description: Backend API for SMS application with OTP functionality
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  title: SMS App Backend API
+  version: "1.0"
+paths:
+  /callback/request:
+    post:
+      consumes:
+      - application/json
+      description: Request a callback call to the specified phone number
+      parameters:
+      - description: Callback Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CallbackRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.CallbackResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.AppError'
+      summary: Request Callback
+      tags:
+      - Callback
+  /callback/status/{request_id}:
+    get:
+      consumes:
+      - application/json
+      description: Get the status of a callback request
+      parameters:
+      - description: Callback Request ID
+        in: path
+        name: request_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Callback'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.AppError'
+      summary: Get Callback Status
+      tags:
+      - Callback
+  /logs:
+    get:
+      consumes:
+      - application/json
+      description: Get all OTP and callback activity logs
+      parameters:
+      - description: 'Limit number of records (default: 100)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.AppError'
+      summary: Get Activity Logs
+      tags:
+      - Logs
+  /sms/otp-status/{phone}:
+    get:
+      consumes:
+      - application/json
+      description: Check the status of OTP for a phone number
+      parameters:
+      - description: Phone Number
+        in: path
+        name: phone
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.OTPStatus'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.AppError'
+      summary: Get OTP Status
+      tags:
+      - SMS
+  /sms/send-otp:
+    post:
+      consumes:
+      - application/json
+      description: Generate and send a 6-digit OTP to the specified phone number
+      parameters:
+      - description: OTP Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.OTPRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.OTPResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.AppError'
+      summary: Send OTP
+      tags:
+      - SMS
+  /sms/send-sms:
+    post:
+      consumes:
+      - application/json
+      description: Send a text message to the specified phone number
+      parameters:
+      - description: SMS Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.SMSRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SMSResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.AppError'
+      summary: Send SMS
+      tags:
+      - SMS
+  /sms/verify-otp:
+    post:
+      consumes:
+      - application/json
+      description: Verify the OTP sent to the specified phone number
+      parameters:
+      - description: OTP Verification Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.VerifyOTPRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VerifyOTPResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.AppError'
+      summary: Verify OTP
+      tags:
+      - SMS
+schemes:
+- http
+- https
+swagger: "2.0"
